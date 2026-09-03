@@ -14,6 +14,20 @@
   #icon{width:120px;height:120px;margin-bottom:30px;}
   #cta{font-size:8vw;font-weight:normal;margin:0;}
   #sub{font-size:5vw;margin-top:15px;color:#aaa;}
+  #btn{
+    margin-top:40px;
+    font-size:6vw;
+    font-weight:bold;
+    color:#fff;
+    background:#7248B9;
+    border:none;
+    border-radius:50px;
+    padding:5vw 12vw;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
+  #btn:active{transform:scale(.96);}
 </style>
 </head>
 <body>
@@ -30,25 +44,30 @@
   </svg>
   <p id="cta">Clique aqui para votar</p>
   <p id="sub">Formulário de votação</p>
+  <!-- Botão real: o clique dele é o gesto que desbloqueia e dispara a sirene -->
+  <button id="btn">🔊 Permitir som e votar</button>
 </div>
 
 <script>
 let ctx, running = false;
 
-// IMPORTANTE: sem auto-start no load — em mobile ele bloqueia o áudio
-// e faz o código marcar "running" sem som, ignorando os toques seguintes.
+// O evento 'click' de um botão real é o gesto mais confiável
+// para desbloquear áudio em iOS e Android.
+document.getElementById('btn').addEventListener('click', start);
 
-['pointerdown','touchstart','keydown','click'].forEach(ev =>
+// Reforço: toques em qualquer lugar da tela também funcionam
+// (caso a pessoa toque fora do botão).
+['pointerdown','touchstart'].forEach(ev =>
   document.addEventListener(ev, start, { once: false })
 );
 
 function start(){
   if (running) return;
   try {
-    // Cria o AudioContext DENTRO do gesto de toque (obrigatório em iOS/Android)
+    // Cria o AudioContext DENTRO do gesto de toque
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // Desbloqueio do iOS: toca um buffer silencioso sincronamente no gesto
+    // Desbloqueio do iOS: buffer silencioso tocado sincronamente no gesto
     const silent = ctx.createBuffer(1, 1, 22050);
     const src = ctx.createBufferSource();
     src.buffer = silent;
@@ -56,8 +75,7 @@ function start(){
     src.start(0);
 
     ctx.resume().then(() => {
-      // Verifica o estado REAL — se ainda estiver suspenso, espera o próximo toque
-      if (ctx.state !== 'running') return;
+      if (ctx.state !== 'running') return; // ainda bloqueado? espera o próximo toque
       running = true;
       startSiren();
     }).catch(()=>{});
