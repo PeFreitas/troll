@@ -3,33 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Votação</title>
+<title>Formulário</title>
 <style>
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;}
   #overlay{
     position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;z-index:10;
-    color:#fff;font-family:Arial Black, Arial, sans-serif;
-    text-align:center;padding:10px;
+    color:#fff;font-family:Arial, sans-serif;text-align:center;padding:20px;
   }
-  .strobe{animation:flash .25s infinite alternate;}
-  @keyframes flash{from{background:#000}to{background:#c00}}
-  #cta{
-    font-size:14vw;
-    font-weight:900;
-    line-height:1.05;
-    margin:0;
-    text-shadow:0 0 20px #ff0;
-    animation:pulse .5s infinite alternate;
-  }
-  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
-  #sub{font-size:6vw;margin-top:20px;color:#ff0;font-weight:bold;}
+  #icon{width:120px;height:120px;margin-bottom:30px;}
+  #cta{font-size:8vw;font-weight:normal;margin:0;}
+  #sub{font-size:5vw;margin-top:15px;color:#aaa;}
 </style>
 </head>
 <body>
-<div id="overlay" class="strobe">
-  <p id="cta">CLIQUE AQUI<br>PARA VOTAR</p>
-  <p id="sub">👆 TOQUE NA TELA 👆</p>
+<div id="overlay">
+  <!-- Ícone do Google Forms (SVG inline) -->
+  <svg id="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#7248B9" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+    <path fill="#7248B9" d="M14 2l6 6h-6V2z" opacity=".5"/>
+    <rect x="8" y="12" width="1.6" height="1.6" fill="#fff"/>
+    <rect x="8" y="15.2" width="1.6" height="1.6" fill="#fff"/>
+    <rect x="8" y="18.4" width="1.6" height="1.6" fill="#fff"/>
+    <rect x="10.8" y="12" width="5.2" height="1.6" fill="#fff"/>
+    <rect x="10.8" y="15.2" width="5.2" height="1.6" fill="#fff"/>
+    <rect x="10.8" y="18.4" width="5.2" height="1.6" fill="#fff"/>
+  </svg>
+  <p id="cta">Clique aqui para votar</p>
+  <p id="sub">Formulário de votação</p>
 </div>
 
 <script>
@@ -64,7 +65,7 @@ function start(){
 
       // LFO que varre a frequência (efeito de sirene)
       lfo = ctx.createOscillator();
-      lfo.frequency.value = 3; // 3 Hz
+      lfo.frequency.value = 3;
       lfoGain = ctx.createGain();
       lfoGain.gain.value = 250;
       lfo.connect(lfoGain);
@@ -88,14 +89,11 @@ function start(){
       if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen').catch(()=>{});
       }
-
-      document.getElementById('cta').textContent = '🚨 ALARMANTE ATIVO 🚨';
-      document.getElementById('sub').textContent = 'FECHE A ABA PARA PARAR';
     }).catch(()=>{});
   } catch(e){}
 }
 
-// Chute para o loop de áudio continuar mesmo em segundo plano
+// Reforço para o áudio continuar mesmo se suspenso
 setInterval(() => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, 1000);
 </script>
 </body>
