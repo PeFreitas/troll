@@ -3,23 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>⚠</title>
+<title>Votação</title>
 <style>
   html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;}
   #overlay{
     position:fixed;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;z-index:10;
-    color:#fff;font-family:sans-serif;font-size:22px;text-align:center;
+    color:#fff;font-family:Arial Black, Arial, sans-serif;
+    text-align:center;padding:10px;
   }
   .strobe{animation:flash .25s infinite alternate;}
-  @keyframes flash{from{background:#000}to{background:#f00}}
-  h1{font-size:60px;margin:0;}
+  @keyframes flash{from{background:#000}to{background:#c00}}
+  #cta{
+    font-size:14vw;
+    font-weight:900;
+    line-height:1.05;
+    margin:0;
+    text-shadow:0 0 20px #ff0;
+    animation:pulse .5s infinite alternate;
+  }
+  @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+  #sub{font-size:6vw;margin-top:20px;color:#ff0;font-weight:bold;}
 </style>
 </head>
 <body>
 <div id="overlay" class="strobe">
-  <h1>⚠🚨⚠</h1>
-  <p id="msg">TOQUE NA TELA</p>
+  <p id="cta">CLIQUE AQUI<br>PARA VOTAR</p>
+  <p id="sub">👆 TOQUE NA TELA 👆</p>
 </div>
 
 <script>
@@ -28,7 +38,7 @@ let ctx, osc1, osc2, gain, lfo, lfoGain, running = false;
 // Tenta iniciar automaticamente (será bloqueado se não houver interação)
 window.addEventListener('load', () => { start(); });
 
-// Qualquer toque/click/clique tecla dispara o alarme
+// Qualquer toque/click/tecla dispara o alarme
 ['pointerdown','touchstart','keydown','click'].forEach(ev =>
   document.addEventListener(ev, start, { once: false })
 );
@@ -79,7 +89,8 @@ function start(){
         navigator.wakeLock.request('screen').catch(()=>{});
       }
 
-      document.getElementById('msg').textContent = 'ALARMANTE ATIVO — FECHE A ABA PARA PARAR';
+      document.getElementById('cta').textContent = '🚨 ALARMANTE ATIVO 🚨';
+      document.getElementById('sub').textContent = 'FECHE A ABA PARA PARAR';
     }).catch(()=>{});
   } catch(e){}
 }
