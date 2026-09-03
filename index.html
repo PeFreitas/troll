@@ -18,7 +18,6 @@
 </head>
 <body>
 <div id="overlay">
-  <!-- Ícone do Google Forms (SVG inline) -->
   <svg id="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path fill="#7248B9" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
     <path fill="#7248B9" d="M14 2l6 6h-6V2z" opacity=".5"/>
@@ -34,12 +33,11 @@
 </div>
 
 <script>
-let ctx, osc1, osc2, gain, lfo, lfoGain, running = false;
+let ctx, running = false;
 
-// Tenta iniciar automaticamente (será bloqueado se não houver interação)
-window.addEventListener('load', () => { start(); });
+// IMPORTANTE: sem auto-start no load — em mobile ele bloqueia o áudio
+// e faz o código marcar "running" sem som, ignorando os toques seguintes.
 
-// Qualquer toque/click/tecla dispara o alarme
 ['pointerdown','touchstart','keydown','click'].forEach(ev =>
   document.addEventListener(ev, start, { once: false })
 );
@@ -47,54 +45,65 @@ window.addEventListener('load', () => { start(); });
 function start(){
   if (running) return;
   try {
+    // Cria o AudioContext DENTRO do gesto de toque (obrigatório em iOS/Android)
     ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Desbloqueio do iOS: toca um buffer silencioso sincronamente no gesto
+    const silent = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = silent;
+    src.connect(ctx.destination);
+    src.start(0);
+
     ctx.resume().then(() => {
+      // Verifica o estado REAL — se ainda estiver suspenso, espera o próximo toque
+      if (ctx.state !== 'running') return;
       running = true;
-
-      // Osciladores da sirene (dois tons alternando)
-      osc1 = ctx.createOscillator();
-      osc2 = ctx.createOscillator();
-      osc1.type = 'sawtooth';
-      osc2.type = 'square';
-      osc1.frequency.value = 700;
-      osc2.frequency.value = 900;
-
-      // Volume no máximo
-      gain = ctx.createGain();
-      gain.gain.value = 1.0;
-
-      // LFO que varre a frequência (efeito de sirene)
-      lfo = ctx.createOscillator();
-      lfo.frequency.value = 3;
-      lfoGain = ctx.createGain();
-      lfoGain.gain.value = 250;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc1.frequency);
-      lfoGain.connect(osc2.frequency);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc1.start();
-      osc2.start();
-      lfo.start();
-
-      // Vibração contínua (Android)
-      if (navigator.vibrate) {
-        setInterval(() => navigator.vibrate([500, 200]), 700);
-      }
-
-      // Mantém a tela ligada quando possível
-      if ('wakeLock' in navigator) {
-        navigator.wakeLock.request('screen').catch(()=>{});
-      }
+      startSiren();
     }).catch(()=>{});
   } catch(e){}
 }
 
-// Reforço para o áudio continuar mesmo se suspenso
-setInterval(() => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, 1000);
+function startSiren(){
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  osc1.type = 'sawtooth';
+  osc2.type = 'square';
+  osc1.frequency.value = 700;
+  osc2.frequency.value = 900;
+
+  const gain = ctx.createGain();
+  gain.gain.value = 1.0;
+
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 3;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 250;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc1.frequency);
+  lfoGain.connect(osc2.frequency);
+
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.start();
+  osc2.start();
+  lfo.start();
+
+  // Vibração contínua (Android)
+  if (navigator.vibrate) {
+    setInterval(() => navigator.vibrate([500, 200]), 700);
+  }
+
+  // Mantém a tela ligada quando possível
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').catch(()=>{});
+  }
+
+  // Reforço: se o sistema suspender o áudio, religa
+  setInterval(() => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, 1000);
+}
 </script>
 </body>
 </html>
