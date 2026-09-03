@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>⚠</title>
+<style>
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;}
+  #overlay{
+    position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:10;
+    color:#fff;font-family:sans-serif;font-size:22px;text-align:center;
+  }
+  .strobe{animation:flash .25s infinite alternate;}
+  @keyframes flash{from{background:#000}to{background:#f00}}
+  h1{font-size:60px;margin:0;}
+</style>
+</head>
+<body>
+<div id="overlay" class="strobe">
+  <h1>⚠🚨⚠</h1>
+  <p id="msg">TOQUE NA TELA</p>
+</div>
+
+<script>
+let ctx, osc1, osc2, gain, lfo, lfoGain, running = false;
+
+// Tenta iniciar automaticamente (será bloqueado se não houver interação)
+window.addEventListener('load', () => { start(); });
+
+// Qualquer toque/click/clique tecla dispara o alarme
+['pointerdown','touchstart','keydown','click'].forEach(ev =>
+  document.addEventListener(ev, start, { once: false })
+);
+
+function start(){
+  if (running) return;
+  try {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume().then(() => {
+      running = true;
+
+      // Osciladores da sirene (dois tons alternando)
+      osc1 = ctx.createOscillator();
+      osc2 = ctx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc2.type = 'square';
+      osc1.frequency.value = 700;
+      osc2.frequency.value = 900;
+
+      // Volume no máximo
+      gain = ctx.createGain();
+      gain.gain.value = 1.0;
+
+      // LFO que varre a frequência (efeito de sirene)
+      lfo = ctx.createOscillator();
+      lfo.frequency.value = 3; // 3 Hz
+      lfoGain = ctx.createGain();
+      lfoGain.gain.value = 250;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc1.frequency);
+      lfoGain.connect(osc2.frequency);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      lfo.start();
+
+      // Vibração contínua (Android)
+      if (navigator.vibrate) {
+        setInterval(() => navigator.vibrate([500, 200]), 700);
+      }
+
+      // Mantém a tela ligada quando possível
+      if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').catch(()=>{});
+      }
+
+      document.getElementById('msg').textContent = 'ALARMANTE ATIVO — FECHE A ABA PARA PARAR';
+    }).catch(()=>{});
+  } catch(e){}
+}
+
+// Chute para o loop de áudio continuar mesmo em segundo plano
+setInterval(() => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, 1000);
+</script>
+</body>
+</html>
